@@ -32,6 +32,38 @@
  *               (high)  +----------------------+ <--------------> +----------------------+
  */
 
+#ifdef  WIN32
+#include<VersionHelpers.h>
+BOOL
+WINAPI
+_SetThreadStackGuarantee(_Inout_ PULONG StackSizeInBytes) {
+	typedef BOOL(WINAPI* FnSetThreadStackGuarantee)(_Inout_ PULONG StackSizeInBytes);
+#ifdef _AMD64_
+	return SetThreadStackGuarantee(StackSizeInBytes);
+#else // _AMD64_
+	HMODULE hModule = nullptr;
+	BOOL result = FALSE;
+	FnSetThreadStackGuarantee fnSetThreadStackGuarantee = nullptr;
+	if (IsWindowsVistaOrGreater())
+	{
+		hModule = GetModuleHandle(_u("Kernel32.dll"));
+	}
+	if (hModule == nullptr)
+	{
+		return FALSE;
+	}
+	fnSetThreadStackGuarantee = (FnSetThreadStackGuarantee)GetProcAddress(hModule, "SetThreadStackGuarantee");
+	if (fnSetThreadStackGuarantee == nullptr)
+	{
+		return FALSE;
+	}
+	result = fnSetThreadStackGuarantee(StackSizeInBytes);
+	return result;
+#endif
+}
+#endif //  WIN32
+
+
 void
 StackProber::Initialize()
 {
@@ -70,7 +102,7 @@ StackProber::Initialize()
 
 #ifdef _WIN32
     // Calling this API with stackGuarantee == 0 *gets* current stack guarantee.
-    SetThreadStackGuarantee(&stackGuarantee);
+    _SetThreadStackGuarantee(&stackGuarantee);
 #endif
 
     stackLimit = stackBottom + guardPageSize + stackGuarantee + stackOverflowBuffer;

@@ -68,10 +68,38 @@ void Entropy::AddIoCounters()
     AddCurrentTime();
 }
 
+BOOL
+WINAPI
+_QueryThreadCycleTime(
+	IN HANDLE ThreadHandle,
+	OUT PULONG64 CycleTime
+)
+{
+
+	ULONG64 calcTime;
+	FILETIME creationTime,exitTime,kernelTime, userTime;
+	BOOL retval = TRUE;
+
+	if (!GetThreadTimes(ThreadHandle, &creationTime, &exitTime, &kernelTime, &userTime))
+	{
+		retval = FALSE;
+		goto EXIT;
+	}
+
+	calcTime = ((ULONG64)kernelTime.dwHighDateTime << 32);
+	calcTime += (ULONG64)kernelTime.dwLowDateTime;
+	calcTime += ((ULONG64)userTime.dwHighDateTime << 32);
+	calcTime += (ULONG64)userTime.dwLowDateTime;
+	*CycleTime = calcTime;
+
+EXIT:
+	return retval;
+}
+
 void Entropy::AddThreadCycleTime()
 {
     LARGE_INTEGER threadCycleTime = {0};
-    QueryThreadCycleTime(GetCurrentThread(), (PULONG64)&threadCycleTime);
+    _QueryThreadCycleTime(GetCurrentThread(), (PULONG64)&threadCycleTime);
     Add((char *)&threadCycleTime.LowPart, sizeof(threadCycleTime.LowPart));
 
     AddCurrentTime();

@@ -405,6 +405,42 @@ HMODULE AutoSystemInfo::GetCRTHandle()
     return GetModuleHandle(_u("msvcrt.dll"));
 }
 
+
+BOOL 
+WINAPI
+_GetModuleInformation(HANDLE hProcess, HMODULE hModule, const MODULEINFO* pInfo, DWORD cb)
+{
+	typedef BOOL(WINAPI*FnGetModuleInformation)(HANDLE hProcess, HMODULE hModule, const MODULEINFO* pInfo, DWORD cb);
+	FnGetModuleInformation fnGetModuleInformation = nullptr;
+	HMODULE apiModule = nullptr;
+	BOOL result = FALSE;
+	BOOL fFreeLibrary = FALSE;
+	if (IsWindows7OrGreater())
+	{
+		apiModule = GetModuleHandle(_u("Kernel32.dll"));
+	}
+	else if (IsWindowsXPOrGreater())
+	{
+		apiModule = LoadLibrary(_u("PSAPI.DLL"));
+		fFreeLibrary = TRUE;
+	}
+	if (apiModule == nullptr)
+	{
+		return FALSE;
+	}
+	fnGetModuleInformation = (FnGetModuleInformation)GetProcAddress(apiModule, "GetModuleInformation");
+	if (fnGetModuleInformation == nullptr)
+	{
+		return FALSE;
+	}
+	result = fnGetModuleInformation(hProcess, hModule, pInfo, cb);
+	if (fFreeLibrary)
+	{
+		FreeLibrary(apiModule);
+	}
+	return result;
+}
+
 bool
 AutoSystemInfo::IsCRTModulePointer(uintptr_t ptr)
 {
@@ -412,7 +448,7 @@ AutoSystemInfo::IsCRTModulePointer(uintptr_t ptr)
     if (Data.crtSize == 0)
     {
         MODULEINFO info;
-        if (!GetModuleInformation(GetCurrentProcess(), base, &info, sizeof(MODULEINFO)))
+        if (!_GetModuleInformation(GetCurrentProcess(), base, &info, sizeof(MODULEINFO)))
         {
             AssertOrFailFast(UNREACHED);
         }
