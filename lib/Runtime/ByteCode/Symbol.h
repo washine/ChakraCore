@@ -30,6 +30,7 @@ private:
     BYTE defCount;
     BYTE needDeclaration : 1;
     BYTE isBlockVar : 1;
+    BYTE isConst : 1;
     BYTE isGlobal : 1;
     BYTE isEval : 1;
     BYTE hasNonLocalReference : 1;  // if true, then this symbol needs to be heap-allocated
@@ -40,8 +41,6 @@ private:
     BYTE isGlobalCatch : 1;
     BYTE isCommittedToSlot : 1;
     BYTE hasNonCommittedReference : 1;
-    BYTE hasRealBlockVarRef : 1;
-    BYTE hasBlockFncVarRedecl : 1;
     BYTE hasVisitedCapturingFunc : 1;
     BYTE isTrackedForDebugger : 1; // Whether the sym is tracked for debugger scope. This is fine because a sym can only be added to (not more than) one scope.
     BYTE isModuleExportStorage : 1; // If true, this symbol should be stored in the global scope export storage array.
@@ -63,6 +62,7 @@ public:
         location(Js::Constants::NoRegister),
         needDeclaration(false),
         isBlockVar(false),
+        isConst(false),
         isGlobal(false),
         hasNonLocalReference(false),
         isFuncExpr(false),
@@ -75,8 +75,6 @@ public:
         isGlobalCatch(false),
         isCommittedToSlot(false),
         hasNonCommittedReference(false),
-        hasRealBlockVarRef(false),
-        hasBlockFncVarRedecl(false),
         hasVisitedCapturingFunc(false),
         isTrackedForDebugger(false),
         isNonSimpleParameter(false),
@@ -152,6 +150,16 @@ public:
     bool GetIsBlockVar() const
     {
         return isBlockVar;
+    }
+
+    void SetIsConst(bool is)
+    {
+        isConst = is;
+    }
+
+    bool GetIsConst() const
+    {
+        return isConst;
     }
 
     void SetIsModuleExportStorage(bool is)
@@ -314,26 +322,6 @@ public:
     void SetIsUsed(bool is)
     {
         isUsed = is;
-    }
-
-    bool HasRealBlockVarRef() const
-    {
-        return hasRealBlockVarRef;
-    }
-
-    void SetHasRealBlockVarRef(bool has = true)
-    {
-        hasRealBlockVarRef = has;
-    }
-
-    bool HasBlockFncVarRedecl() const
-    {
-        return hasBlockFncVarRedecl;
-    }
-
-    void SetHasBlockFncVarRedecl(bool has = true)
-    {
-        hasBlockFncVarRedecl = has;
     }
 
     AssignmentState GetAssignmentState() const
